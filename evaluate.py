@@ -1,5 +1,5 @@
 import json
-
+from json import JSONEncoder
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
@@ -12,7 +12,11 @@ from utils import (
     load_bbox_3d,
     compute_pose_diff,
 )
-
+class NumpyArrayEncoder(JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return JSONEncoder.default(self, obj)
 from poses import PoseAnnot
 
 def evaluate(cfg, predictions):
@@ -50,6 +54,15 @@ def evaluate(cfg, predictions):
     # get depth range from annotations, and divide it to serval bins
     depth_min = INF
     depth_max = 0
+
+
+
+    dump_predictions_to_json = True
+    if dump_predictions_to_json:
+        with open('predictions', 'w') as fp:
+            json.dump(predictions_for_eval, fp,  indent=4, cls=NumpyArrayEncoder)
+
+
     for filename, item in predictions_for_eval.items():
         gt = item['gt']
         for clsid, R, T in gt:
