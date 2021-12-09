@@ -181,7 +181,7 @@ class PoseAnnot(object):
         bboxs = []
         for i in range(objCnt):
             if isinstance(self.mask, torch.Tensor):
-                positions = (self.mask == (i+1)).nonzero(as_tuple=False)
+                positions = (self.mask == (i+1)).nonzero() #aca modificado .nonzero(argument)
                 ys = positions[:, 0]
                 xs = positions[:, 1]
             else:
