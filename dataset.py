@@ -138,10 +138,27 @@ def image_list(tensors, size_divisible=0):
 
 def collate_fn(size_divisible):
     def collate_data(batch):
-        batch = list(zip(*batch))
-        imgs = image_list(batch[0], size_divisible)
-        targets = batch[1]
-        meta_infos = batch[2]
+        # batch = list(zip(*batch))
+        # imgs = image_list(batch[0], size_divisible)
+        # imgs = [image_list(sample[0][0], size_divisible) for sample in batch]
+        imgs, targets, meta_infos = [],[],[]
+        for sample in batch:
+            sample = list(zip(*sample))
+            imgs.append(sample[0])
+            targets.append(sample[1])
+            meta_infos.append(sample[2])
+        targets = [target
+                   for list_of_targets in targets
+                   for target in list_of_targets
+                   ]
+        meta_infos = [meta_info
+                      for list_of_meta_infos in meta_infos
+                      for meta_info in list_of_meta_infos
+                      ]
+        imgs = [img
+             for tup_of_imgs in imgs
+             for img in tup_of_imgs]
+        imgs = image_list(imgs, size_divisible)
 
         return imgs, targets, meta_infos
 
