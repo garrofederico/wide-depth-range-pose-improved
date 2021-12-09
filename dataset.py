@@ -25,11 +25,11 @@ class BOP_Dataset(Dataset):
             self.img_files = [dataDir + '/' + x.strip() for x in self.img_files]
         # 
         rawSampleCount = len(self.img_files)
-        if training and samples_count > 0:
-            self.img_files = random.choices(self.img_files, k = samples_count)
+        # if training and samples_count > 0:
+        #     self.img_files = random.choices(self.img_files, k = samples_count)
 
-        if training:
-            random.shuffle(self.img_files)
+        # if training:
+        #     random.shuffle(self.img_files)
 
         print("Number of samples: %d / %d" % (len(self.img_files), rawSampleCount))
         # 
@@ -41,13 +41,13 @@ class BOP_Dataset(Dataset):
         self.training = training
 
     def __len__(self):
-        return len(self.img_files)
+        return len(self.img_files) - 3 # -2 added to index go above max when taking triplets
 
     def __getitem__(self, index):
-        item = self.getitem1(index)
-        while item is None:
-            index = random.randint(0, len(self.img_files) - 1)
-            item = self.getitem1(index)
+        item = [self.getitem1(index), self.getitem1(index+1), self.getitem1(index+2)]
+        while item[0] == None or item[1] == None or item[2] == None:
+            index = random.randint(0, len(self.img_files) - 3)
+            item = [self.getitem1(index), self.getitem1(index+1), self.getitem1(index+2)]
         return item
 
     def getitem1(self, index):
