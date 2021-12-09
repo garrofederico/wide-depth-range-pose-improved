@@ -219,6 +219,7 @@ if __name__ == '__main__':
 
     n_gpu = int(os.environ['WORLD_SIZE']) if 'WORLD_SIZE' in os.environ else 1
     cfg['RUNTIME']['N_GPU'] = n_gpu
+    # cfg['RUNTIME']['N_GPU'] = 0
     cfg['RUNTIME']['DISTRIBUTED'] = n_gpu > 1
 
     if cfg['RUNTIME']['DISTRIBUTED']:
@@ -226,8 +227,8 @@ if __name__ == '__main__':
         torch.distributed.init_process_group(backend='gloo', init_method='env://')
         synchronize()
 
-    # device = 'cuda'
-    device = cfg['RUNTIME']['RUNNING_DEVICE']
+    device = 'cpu'
+    # device = cfg['RUNTIME']['RUNNING_DEVICE']
 
     internal_K = np.array(cfg['INPUT']['INTERNAL_K']).reshape(3,3)
 
