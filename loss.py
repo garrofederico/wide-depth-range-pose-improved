@@ -132,8 +132,8 @@ class PoseLoss(object):
         # compute projection matrices
         P = torch.bmm(B.view(-1, 3, 1), B.view(-1, 1, 3)) / torch.bmm(B.view(-1, 1, 3), B.view(-1, 3, 1))
 
-        target_3D_in_camera_frame = target_3D_in_camera_frame.view(-1, 3, 1)
-        px = torch.bmm(P, target_3D_in_camera_frame)
+        target_3D_in_camera_frame = target_3D_in_camera_frame.view(-1, 3, 1) #Gt
+        px = torch.bmm(P, target_3D_in_camera_frame) #pred
 
         target_3D_in_camera_frame = target_3D_in_camera_frame / diameter_ext
         px = px / diameter_ext
@@ -255,6 +255,22 @@ class PoseLoss(object):
         return cls_labels, reg_targets, aux_raw_boxes, aux_3D_in_camera_frame
 
     def __call__(self, pred_cls, pred_reg, targets, anchors):
+
+        #split feature map batch predictions into triplets
+        pred_cls_split = [torch.split(feature_map1,3,0) for feature_map1 in pred_cls]
+        pred_cls_split = list(zip(*pred_cls_split))
+        pred_reg_split = [torch.split(feature_map2,3,0) for feature_map2 in pred_reg]
+        pred_reg_split = list(zip(*pred_reg_split))
+        cls_loss, reg_loss = 0, 0
+        for i, j, k in zip(pred_cls_split, pred_reg_split, range(0,len(targets),3)):
+            # function call per triplet
+            cls_loss_triplet, reg_loss_triplet = self.loss_per_triplet(i,j, targets[k:k+3],anchors[k:k+3])
+            cls_loss += cls_loss_triplet
+            reg_loss += reg_loss_triplet
+
+        return cls_loss * self.loss_weight_cls, reg_loss * self.loss_weight_reg
+
+    def loss_per_triplet(self, pred_cls, pred_reg, targets, anchors):
         labels, reg_targets, aux_raw_boxes, aux_3D_in_camera_frame = self.prepare_targets(targets, anchors)
 
         N = len(labels)
@@ -280,10 +296,9 @@ class PoseLoss(object):
             anchors_flatten = anchors_flatten[pos_inds]
 
             reg_loss = self.ObjectSpaceLoss(
-                pred_reg_flatten, aux_3D_in_camera_frame_flatten, 
+                pred_reg_flatten, aux_3D_in_camera_frame_flatten,
                 cls_label_flatten, anchors_flatten
-                )
+            )
         else:
             reg_loss = pred_reg_flatten.sum()
-
-        return cls_loss * self.loss_weight_cls, reg_loss * self.loss_weight_reg
+        return cls_loss, reg_loss
