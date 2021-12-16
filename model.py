@@ -483,12 +483,13 @@ class PoseModule(nn.Module):
             return self._forward_test(pred_cls, pred_reg, targets, anchors)
 
     def _forward_train(self, pred_cls, pred_reg, targets, anchors):
-        loss_cls, loss_reg = self.loss_evaluator(
+        loss_cls, loss_reg, loss_inter_frame = self.loss_evaluator(
             pred_cls, pred_reg, targets, anchors
         )
         losses = {
             "loss_cls": loss_cls,
             "loss_reg": loss_reg,
+            "loss_inter_frame": loss_inter_frame,
         }
         return None, losses
 

@@ -178,8 +178,9 @@ def train(cfg, epoch, max_epoch, loader, model, optimizer, scheduler, device, lo
         _, loss_dict = model(images, targets=targets)
         loss_cls = loss_dict['loss_cls'].mean()
         loss_reg = loss_dict['loss_reg'].mean()
+        loss_inter_frame = loss_dict['loss_reg'].mean()
 
-        loss = loss_cls + loss_reg
+        loss = loss_cls + loss_reg + loss_inter_frame
         loss.backward()
         nn.utils.clip_grad_norm_(model.parameters(), 5.0)
         optimizer.step()
@@ -188,6 +189,7 @@ def train(cfg, epoch, max_epoch, loader, model, optimizer, scheduler, device, lo
         loss_reduced = reduce_loss_dict(loss_dict)
         loss_cls = loss_reduced['loss_cls'].mean().item()
         loss_reg = loss_reduced['loss_reg'].mean().item()
+        loss_inter_frame = loss_reduced['loss_inter_frame'].mean().item()
 
         if get_rank() == 0:
             current_lr = optimizer.param_groups[0]['lr']

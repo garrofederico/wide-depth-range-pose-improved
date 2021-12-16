@@ -112,6 +112,7 @@ class PoseLoss(object):
         self.internal_K = internal_K
         self.target_coder = target_coder
         self.diameters = diameters
+        self.MSE_loss= nn.MSELoss(reduction='mean')
 
     def ObjectSpaceLoss(self, pred, target_3D_in_camera_frame, cls_labels, anchors, weight=None):
         if not isinstance(self.diameters, torch.Tensor):
