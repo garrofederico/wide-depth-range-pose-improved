@@ -143,10 +143,10 @@ class PoseLoss(object):
         losses = losses / scaling_factor
 
         if weight is not None and weight.sum() > 0:
-            return (losses * weight).sum()
+            return (losses * weight).sum(), px
         else:
             assert losses.numel() != 0
-            return losses.sum()
+            return losses.sum(), px
 
     def prepare_targets(self, targets, anchors):
         cls_labels = []
@@ -263,13 +263,17 @@ class PoseLoss(object):
         pred_reg_split = [torch.split(feature_map2,3,0) for feature_map2 in pred_reg]
         pred_reg_split = list(zip(*pred_reg_split))
         cls_loss, reg_loss = 0, 0
+        pxs, targets_3D = [], []
         for i, j, k in zip(pred_cls_split, pred_reg_split, range(0,len(targets),3)):
             # function call per triplet
-            cls_loss_triplet, reg_loss_triplet = self.loss_per_triplet(i,j, targets[k:k+3],anchors[k:k+3])
+            cls_loss_triplet, reg_loss_triplet, px = self.loss_per_triplet(i,j, targets[k:k+3],anchors[k:k+3])
             cls_loss += cls_loss_triplet
             reg_loss += reg_loss_triplet
+            pxs.append(px)
+        # scaling_factor = 50 # 0.02d
+        inter_frame_loss = self.MSE_loss(2*pxs[1],(pxs[0]+pxs[2]))
 
-        return cls_loss * self.loss_weight_cls, reg_loss * self.loss_weight_reg
+        return cls_loss * self.loss_weight_cls, reg_loss * self.loss_weight_reg, inter_frame_loss
 
     def loss_per_triplet(self, pred_cls, pred_reg, targets, anchors):
         labels, reg_targets, aux_raw_boxes, aux_3D_in_camera_frame = self.prepare_targets(targets, anchors)
@@ -296,10 +300,10 @@ class PoseLoss(object):
             aux_3D_in_camera_frame_flatten = aux_3D_in_camera_frame_flatten[pos_inds]
             anchors_flatten = anchors_flatten[pos_inds]
 
-            reg_loss = self.ObjectSpaceLoss(
+            reg_loss, px = self.ObjectSpaceLoss(
                 pred_reg_flatten, aux_3D_in_camera_frame_flatten,
                 cls_label_flatten, anchors_flatten
             )
         else:
             reg_loss = pred_reg_flatten.sum()
-        return cls_loss, reg_loss
+        return cls_loss, reg_loss, px
